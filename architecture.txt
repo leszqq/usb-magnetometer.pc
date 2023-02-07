@@ -1,0 +1,8 @@
+Gui() : IGuiController [set_bttn_x_active() itd], IGuiSubject [attach(observer), notify_start_bttn_clicked]
+Supervisor(IGuiController)[run()] : IGuiObserver, IMeasurementConsumer, 
+Sensor() : ISensorController, IMeasurementProducer
+
+ex:
+g = Gui()
+s = Supervisor(g)
+g.attach(s)
