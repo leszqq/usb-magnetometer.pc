@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
-from types import Vector
+from custom_types import Vector
 from typing import List
 
 
 class IMeasurementConsumer(ABC):
 
     @abstractmethod
-    def feed_measurement(self, measurement: Vector):
+    def feed_measurement(self, measurement: Vector) -> None:
         pass
 
     @abstractmethod
-    def feed_measurement_list(self, measurements: List[Vector]):
+    def feed_measurements(self, measurements: List[Vector]) -> None:
         pass
