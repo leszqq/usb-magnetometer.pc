@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from custom_types import Vector
+from custom_types import Vector, ReadingsChunk
 from typing import List
 
 
@@ -10,7 +10,7 @@ class IGuiController(ABC):
         pass
 
     @abstractmethod
-    def update_graph(self, measurements: List[Vector]) -> None:
+    def update_graph(self, measurements: ReadingsChunk) -> None:
         pass
 
     @abstractmethod
