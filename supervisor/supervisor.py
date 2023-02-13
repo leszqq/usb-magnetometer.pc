@@ -25,16 +25,19 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._reading_queue = asyncio.Queue() # TODO: set type of readings list
 
         self._app_state = AppState.SENSOR_DISCONNECTED
+        self._update_gui()
         asyncio.create_task(self._connect_to_sensor())
 
     def on_start_button(self) -> None:
         if self._app_state == AppState.STANDBY:
             self._app_state = AppState.TRANSITION
+            self._update_gui()
             asyncio.create_task(self._read())
 
     def on_stop_button(self) -> None:
         if self._app_state == AppState.READING:
             self._app_state = AppState.TRANSITION
+            self._update_gui()
             asyncio.create_task(self._stop_reading())
             pass
 
@@ -42,6 +45,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._change_range_if_needed(SensorRange.PLUS_MINUS_25_MT)
 
     def on_50_mt_range_button(self) -> None:
+        print("T1")
         self._change_range_if_needed(SensorRange.PLUS_MINUS_50_MT)
 
     def on_100_mt_range_button(self) -> None:
@@ -59,17 +63,16 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
             pass
 
     async def _connect_to_sensor(self):
-        logger.info("supervisor: Connecting to sensor...")
-        self._gui.set_waiting_for_connection_message(shown=True)
         await self._sensor.connect_and_init()
-        logger.info("supervisor: Connected to sensor")
-        self._gui.set_waiting_for_connection_message(shown=False)
         self._app_state = AppState.STANDBY
+        self._update_gui()
 
     async def _read(self):
         # TODO: flush queue ex. self._reading_queue.flush()
         await self._sensor.start_stream()
         self._app_state = AppState.READING
+        self._update_gui()
+
 
         while True:
             measurements_chunk: List[Vector] = await self._reading_queue.get()
@@ -80,19 +83,43 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
     async def _stop_reading(self):
         await self._sensor.stop_stream()
         self._app_state = AppState.STANDBY
+        self._update_gui()
 
-    async def _reconfigure(self, previous_state: AppState, sensor_range: SensorRange):
-        await self._sensor.stop_stream()
+    async def _reconfigure(self, sensor_range: SensorRange):
         await self._sensor.reconfigure(sensor_range)
         self._current_sensor_range = sensor_range
-        if previous_state == AppState.READING:
-            asyncio.create_task(self._read())
-        else:
-            self._app_state = AppState.STANDBY
+        self._app_state = AppState.STANDBY
+        self._update_gui()
 
     def _change_range_if_needed(self, new_range: SensorRange):
-        if self._app_state == AppState.READING or self._app_state == AppState.STANDBY:
+        if self._app_state == AppState.STANDBY:
             if self._current_sensor_range != new_range:
-                previous_app_state: AppState = self._app_state
                 self._app_state = AppState.TRANSITION
-                asyncio.create_task(self._reconfigure(previous_app_state, new_range))
+                self._update_gui()
+                asyncio.create_task(self._reconfigure(new_range))
+
+    def _update_gui(self):
+
+        def disable_all_buttons():
+            self._gui.set_range_buttons_active(False)
+            self._gui.set_start_button_active(False)
+            self._gui.set_stop_button_active(False)
+
+        if self._app_state == AppState.TRANSITION:
+            pass
+            # self._gui.show_info(' ')
+            # disable_all_buttons()
+        elif self._app_state == AppState.SENSOR_DISCONNECTED:
+            self._gui.show_info("Waiting for sensor connected...", warning=True)
+            disable_all_buttons()
+        elif self._app_state == AppState.STANDBY:
+            disable_all_buttons()
+            self._gui.show_info("Standby")
+            self._gui.set_start_button_active(True)
+            self._gui.set_range_buttons_active(True)
+        elif self._app_state == AppState.READING:
+            disable_all_buttons()
+            self._gui.show_info("Reading")
+            self._gui.set_stop_button_active(True)
+
+        self._gui.highlight_range_button(self._current_sensor_range)

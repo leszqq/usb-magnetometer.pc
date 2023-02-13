@@ -15,7 +15,7 @@ class GuiStub(IGuiController, IGuiSubject):
     def __init__(self):
         self._gui_observer: Optional[IGuiObserver] = None
 
-    def update_measurement_text_fields(self, measurement: Vector) -> None:
+    def update_measurement_text_field(self, measurement: Vector) -> None:
         logger.info(f"Text fields updated with {measurement}")
 
     def update_graph(self, measurements: List[Vector]) -> None:
@@ -24,10 +24,10 @@ class GuiStub(IGuiController, IGuiSubject):
     def set_waiting_for_connection_message(self, shown: bool) -> None:
         logger.info(f"Waiting for connection message {'shown' if shown else 'hidden'}")
 
-    def set_start_button(self, active: bool) -> None:
+    def set_start_button_active(self, active: bool) -> None:
         logger.info(f"Start button set {'active' if active else 'inactive'}")
 
-    def set_stop_button(self, active: bool) -> None:
+    def set_stop_button_active(self, active: bool) -> None:
         logger.info(f"Stop button set {'active' if active else 'inactive'}")
 
     def attach_observer(self, observer: IGuiObserver) -> None:

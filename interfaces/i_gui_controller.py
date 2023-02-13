@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from custom_types import Vector, ReadingsChunk
-from typing import List
+from interfaces.i_sensor_controller import SensorRange
 
 
 class IGuiController(ABC):
 
     @abstractmethod
-    def update_measurement_text_fields(self, measurement: Vector) -> None:
+    def update_measurement_text_field(self, measurements: ReadingsChunk) -> None:
         pass
 
     @abstractmethod
@@ -14,13 +14,21 @@ class IGuiController(ABC):
         pass
 
     @abstractmethod
-    def set_waiting_for_connection_message(self, shown: bool) -> None:
+    def show_info(self, text: str, warning: bool = False) -> None:
         pass
 
     @abstractmethod
-    def set_start_button(self, active: bool) -> None:
+    def set_start_button_active(self, active: bool) -> None:
         pass
 
     @abstractmethod
-    def set_stop_button(self, active: bool) -> None:
+    def set_stop_button_active(self, active: bool) -> None:
+        pass
+
+    @abstractmethod
+    def set_range_buttons_active(self, active: bool) -> None:
+        pass
+
+    @abstractmethod
+    def highlight_range_button(self, range: SensorRange) -> None:
         pass

@@ -20,9 +20,8 @@ class SensorStub(ISensorController, IMeasurementProducer):
 
         self._reading_generator_task: Optional[asyncio.Task] = None
 
-
     async def connect_and_init(self) -> None:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)
         logger.info("sensor initialized")
         pass
 
@@ -36,6 +35,7 @@ class SensorStub(ISensorController, IMeasurementProducer):
         pass
 
     async def start_stream(self) -> None:
+        await asyncio.sleep(0.1)
         self._reading_generator_task = asyncio.create_task(self._generate_readings())
         pass
 

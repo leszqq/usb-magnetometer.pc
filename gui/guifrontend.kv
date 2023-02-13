@@ -1,0 +1,191 @@
+#:kivy 2.1.0
+
+#:set fs_small 13
+#:set fs_medium 16
+#:set fs_big 20
+
+
+#:set default_active_button_background [x * 2 for x in [0.5, 0.5, 0.5, 1.0]]
+#:set default_inactive_button_background [x * 2 for x in [0.3, 0.3, 0.3, 1.0]]
+#:set default_highlighted_active_button_background [x * 2 for x in [0.8, 0.8, 0.8, 1.0]]
+#:set default_highlighted_inactive_button_background [x * 2 for x in [0.5, 0.5, 0.5, 1.0]]
+#:set default_active_text_color [1.0, 1.0, 1.0, 1.0]
+#:set default_inactive_text_color [0.6, 0.6, 0.6, 1.0]
+
+#:set light_blue [0.0, 0.0, 0.8, 1.0]
+#:set light_gray [0.9, 0.9, 0.9, 1.0]
+
+#:set light_green [0.0, 1.0, 0.0, 1.0]
+#:set green [0.0, 0.7, 0.0, 1.0]
+#:set dark_green [0.0, 0.3, 0.0, 1.0]
+
+#:set light_red [1.0, 0.0, 0.0, 1.0]
+#:set red [0.7, 0.0, 0.0, 1.0]
+#:set dark_red [0.3, 0.0, 0.0, 1.0]
+
+#:set background_color [0.18, 0.18, 0.18, 1]
+#:set primary_color [1, 1, 1, 1]
+#:set secondary_color [0.6, 0.6, 0.6, 1]
+
+<CustomButton@Button>
+    _active_background_color: default_active_button_background
+    _inactive_background_color: default_inactive_button_background
+    _highlighted_active_background_color: default_highlighted_active_button_background
+    _highlighted_inactive_background_color: default_highlighted_inactive_button_background
+    _active_text_color: default_active_text_color
+    _inactive_text_color: default_inactive_text_color
+    background_color: (self._active_background_color if self.active else self._inactive_background_color) if not self.highlighted else (self._highlighted_active_background_color if self.active else self._highlighted_inactive_background_color)
+    color: self._active_text_color if self.active else self._inactive_text_color
+    background_down: self.background_normal
+
+<SmallButton@CustomButton>
+    font_size: fs_small
+
+<MeasurementLabel@Label>
+    size_hint: None, None
+    size: 150, 30
+    halign: 'left'
+    valign : 'center'
+    text_size: self.size
+    font_name: 'RobotoMono-Regular'
+
+<GuiLayout>:
+    canvas.before:
+        Color:
+            rgba: background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            size_hint: 1.0, None
+            size: 1, 120
+            orientation: 'horizontal'
+            padding: '12dp'
+            spacing: '12dp'
+
+            BoxLayout:
+                spacing: '12dp'
+                size_hint: None, 1.0
+                size: 80, 1
+                orientation: 'vertical'
+
+                CustomButton:
+                    id: start_button
+                    text: 'Start'
+                    size_hint: 1.0, 0.5
+                    _active_background_color: [x * 2 for x in green]
+                    _inactive_background_color: [x * 2 for x in dark_green]
+                    _highlighted_background_color: [x * 2 for x in light_green]
+
+                CustomButton:
+                    id: stop_button
+                    text: 'Stop'
+                    size_hint: 1.0, 0.5
+                    _active_background_color: [x * 2 for x in red]
+                    _inactive_background_color: [x * 2 for x in dark_red]
+                    _highlighted_background_color: [x * 2 for x in light_red]
+
+            BoxLayout:
+                spacing: '2dp'
+                size_hint: None, 1.0
+                size: 80, 1
+                orientation: 'vertical'
+                Label:
+                    text: 'Range:'
+                    font_size: fs_medium
+                SmallButton:
+                    id: range_25_mt_button
+                    text: '\u00B1 25 mT'
+                    _highlighted_background_color: [x * 2 for x in light_gray]
+                SmallButton:
+                    id: range_50_mt_button
+                    text: '\u00B1 50 mT'
+                    _highlighted_background_color: [x * 2 for x in light_gray]
+                SmallButton:
+                    id: range_100_mt_button
+                    text: '\u00B1 100 mT'
+                    _highlighted_background_color: [x * 2 for x in light_gray]
+
+        BoxLayout:
+            size_hint: 1.0, None
+            size: 1, 1
+            canvas.before:
+                Color:
+                    rgba: [0,0,0,1]
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+        BoxLayout:
+            size_hint: 1.0, None
+            height: info_bar.height
+            canvas.before:
+                Color:
+                    rgba: background_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            InfoBar:
+                height: 0
+                text: ''
+                id: info_bar
+                halign: 'left'
+                valign : 'center'
+                text_size: self.size
+
+        BoxLayout:
+            size_hint: 1.0, None
+            size: 1, 1
+            canvas.before:
+                Color:
+                    rgba: [0,0,0,1]
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+        FilteredMeasurements:
+            id: filtered_measurements
+            size_hint: 1.0, None
+            height: 30
+            orientation: 'horizontal'
+            canvas.before:
+                Color:
+                    rgba: background_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            MeasurementLabel:
+                color: [1, 0, 0, 1]
+                text: self.parent.x_text
+            MeasurementLabel:
+                color: [0, 1, 0, 1]
+                text: self.parent.y_text
+            MeasurementLabel:
+                color: [0, 0, 1, 1]
+                text: self.parent.z_text
+            MeasurementLabel:
+                color: [1, 1, 1, 1]
+                text: self.parent.m_text
+
+        BoxLayout:
+            canvas.before:
+                Color:
+                    rgba: background_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            CustomGraph:
+                id: graph
+                y_ticks_major: 10.0
+                x_ticks_major: 1.0
+                ylabel: 'Magnetic Flux Density [mT]'
+                xlabel: 'Time [s]'
+                x_grid: True
+                y_grid: True
+                ymin: -50.0
+                ymax: 50.0
+                x_grid_label: True
+                y_grid_label: True

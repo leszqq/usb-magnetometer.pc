@@ -7,7 +7,7 @@ import logging
 
 
 async def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     # gui = GuiStub()
     gui = Gui()
     await gui.wait_until_initialized()
