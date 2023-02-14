@@ -69,7 +69,7 @@
             BoxLayout:
                 spacing: '12dp'
                 size_hint: None, 1.0
-                size: 80, 1
+                size: 120, 1
                 orientation: 'vertical'
 
                 CustomButton:
@@ -87,6 +87,24 @@
                     _active_background_color: [x * 2 for x in red]
                     _inactive_background_color: [x * 2 for x in dark_red]
                     _highlighted_background_color: [x * 2 for x in light_red]
+
+            BoxLayout:
+                spacing: '12dp'
+                size_hint: None, 1.0
+                size: 120, 1
+                orientation: 'vertical'
+
+                CustomButton:
+                    id: explore_data_button
+                    text: 'Explore Data'
+                    size_hint: 1.0, 0.5
+                    _highlighted_background_color: [x * 2 for x in light_gray]
+
+                CustomButton:
+                    id: save_data_button
+                    text: 'Browse data'
+                    size_hint: 1.0, 0.5
+                    _highlighted_background_color: [x * 2 for x in light_gray]
 
             BoxLayout:
                 spacing: '2dp'

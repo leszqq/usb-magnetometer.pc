@@ -6,7 +6,7 @@ import logging
 import numpy as np
 
 from gui.gui_frontend import GuifrontendApp
-from custom_types import ReadingsChunk
+from custom_types import MeasurementsChunk
 from custom_types import Vector
 from interfaces.i_gui_controller import IGuiController, SensorRange
 from interfaces.i_gui_observer import IGuiObserver
@@ -22,8 +22,8 @@ class Gui(IGuiController, IGuiSubject):
         self._gui_app = GuifrontendApp()
         self._gui_task = asyncio.create_task(self._run())
 
-        self._test_readings = ReadingsChunk([], [], [], [])
-        asyncio.create_task(self.test())
+        # self._test_readings = ReadingsChunk([], [], [], [])
+        # asyncio.create_task(self.test())
 
     async def _run(self):
         await self._gui_app.async_run(async_lib='asyncio')
@@ -31,35 +31,38 @@ class Gui(IGuiController, IGuiSubject):
     async def wait_until_initialized(self) -> None:
         await self._gui_app.wait_until_started()
 
-    def update_measurement_text_field(self, measurements: ReadingsChunk) -> None:
+    def update_measurement_text_field(self, measurements: MeasurementsChunk) -> None:
         self._gui_app.root_layout.ids.filtered_measurements.update(measurements)
 
-    async def test(self):
-        period = 0
-        while True:
-            SAMPLING_RATE = 20000
-            UPDATE_PERIOD = 0.05
-            SAMPLES_PER_UPDATE = int(SAMPLING_RATE * UPDATE_PERIOD)
-            await asyncio.sleep(UPDATE_PERIOD)
-            t = np.linspace((period * SAMPLES_PER_UPDATE) / SAMPLING_RATE,
-                            ((1 + period) * SAMPLES_PER_UPDATE - 1) / SAMPLING_RATE,
-                            SAMPLES_PER_UPDATE)
-            period += 1
-            x = 20 + 30 * np.sin(2 * 0.333 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
-            y = 20 * np.sin(2 * 1 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
-            z = 10 * t
-            # z = 40 * np.sin(2 * 4 * np.pi * t)# + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
-            self._test_readings.t = t
-            self._test_readings.x = x
-            self._test_readings.y = y
-            self._test_readings.z = z
+    # async def test(self):
+    #     period = 0
+    #     while True:
+    #         SAMPLING_RATE = 20000
+    #         UPDATE_PERIOD = 0.05
+    #         SAMPLES_PER_UPDATE = int(SAMPLING_RATE * UPDATE_PERIOD)
+    #         await asyncio.sleep(UPDATE_PERIOD)
+    #         t = np.linspace((period * SAMPLES_PER_UPDATE) / SAMPLING_RATE,
+    #                         ((1 + period) * SAMPLES_PER_UPDATE - 1) / SAMPLING_RATE,
+    #                         SAMPLES_PER_UPDATE)
+    #         period += 1
+    #         x = 20 + 30 * np.sin(2 * 0.333 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
+    #         y = 20 * np.sin(2 * 1 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
+    #         z = 10 * t
+    #         # z = 40 * np.sin(2 * 4 * np.pi * t)# + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
+    #         self._test_readings.t = t
+    #         self._test_readings.x = x
+    #         self._test_readings.y = y
+    #         self._test_readings.z = z
+    #
+    #         self.update_graph(self._test_readings)
+    #         self.update_measurement_text_field(self._test_readings)
 
-            self.update_graph(self._test_readings)
-            self.update_measurement_text_field(self._test_readings)
-
-    def update_graph(self, measurements: ReadingsChunk) -> None:
+    def update_graph(self, measurements: MeasurementsChunk) -> None:
         self._gui_app.root_layout.ids.graph.update_data(measurements)
         self._gui_app.root_layout.ids.graph.update_plot()
+
+    def reset_graph(self) -> None:
+        self._gui_app.root_layout.ids.graph.reset()
 
     def show_info(self, text: str, warning: bool = False):
         self._gui_app.root_layout.ids.info_bar.set_message(text, warning)
@@ -74,6 +77,12 @@ class Gui(IGuiController, IGuiSubject):
         self._gui_app.root_layout.ids.range_25_mt_button.set_active(active)
         self._gui_app.root_layout.ids.range_50_mt_button.set_active(active)
         self._gui_app.root_layout.ids.range_100_mt_button.set_active(active)
+
+    def set_explore_data_button(self, active: bool) -> None:
+        self._gui_app.root_layout.ids.explore_data_button.set_active(active)
+
+    def set_save_data_button(self, active: bool) -> None:
+        self._gui_app.root_layout.ids.save_data_button.set_active(active)
 
     def highlight_range_button(self, range: SensorRange) -> None:
         def unhiglight_all():
@@ -97,6 +106,8 @@ class Gui(IGuiController, IGuiSubject):
         gui_ids.range_25_mt_button.set_on_press_callback(observer.on_25_mt_range_button)
         gui_ids.range_50_mt_button.set_on_press_callback(observer.on_50_mt_range_button)
         gui_ids.range_100_mt_button.set_on_press_callback(observer.on_100_mt_range_button)
+        gui_ids.explore_data_button.set_on_press_callback(observer.on_explore_data_button)
+        gui_ids.save_data_button.set_on_press_callback(observer.on_save_data_button)
 
     def set_fixed_rate_panel_active(self, active: bool) -> None:
         self._gui_app.root_layout.ids.fixed_rate_panel.active_prop = active

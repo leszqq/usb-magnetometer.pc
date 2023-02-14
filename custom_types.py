@@ -10,13 +10,13 @@ class Vector:
 
 
 @dataclass
-class ReadingsChunk:
+class MeasurementsChunk:
     t: List[float]
     x: List[float]
     y: List[float]
     z: List[float]
 
-    def extend(self, new: 'ReadingsChunk') -> None:
+    def extend(self, new: 'MeasurementsChunk') -> None:
         self.t.extend(new.t)
         self.x.extend(new.x)
         self.y.extend(new.y)

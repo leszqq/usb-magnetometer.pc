@@ -10,7 +10,7 @@ from kivymd.uix.behaviors import HoverBehavior
 from kivy_garden.graph import Graph, LinePlot
 from scipy import signal
 from typing import Optional, Callable
-from custom_types import ReadingsChunk
+from custom_types import MeasurementsChunk
 import asyncio
 from math import sqrt
 from time import perf_counter
@@ -83,7 +83,7 @@ class FilteredMeasurements(BoxLayout):
         self._update_filters()
         self.font_name = 'Cour'
 
-    def update(self, chunk: ReadingsChunk) -> None:
+    def update(self, chunk: MeasurementsChunk) -> None:
         x, self._x_filt_state = signal.sosfilt(self._aafilter, chunk.x, zi=self._x_filt_state)
         y, self._y_filt_state = signal.sosfilt(self._aafilter, chunk.y, zi=self._y_filt_state)
         z, self._z_filt_state = signal.sosfilt(self._aafilter, chunk.z, zi=self._z_filt_state)
@@ -110,28 +110,27 @@ class CustomGraph(Graph):
 
     def __init__(self, **kwargs):
         super(CustomGraph, self).__init__(**kwargs)
-        self._x_filt_state = None
-        self._y_filt_state = None
-        self._z_filt_state = None
-        self._show_x = True
-        self._show_y = True
-        self._show_z = True
-        self._show_abs = False
         self._MAX_PLOT_POINTS = 1000
         self._data_fs = 10000
         self._time_range = 10.0
-        self.xmax = self._time_range
-        self.xmin = self.xmax - self._time_range
-        self._data: ReadingsChunk = ReadingsChunk([], [], [], [])
-        self._data_filtered: ReadingsChunk = ReadingsChunk([], [], [], [])
-        self._data_decimated: ReadingsChunk = ReadingsChunk([], [], [], [])
-        self._x_plot = LinePlot(color=[1, 0, 0, 1])
-        self._y_plot = LinePlot(color=[0, 1, 0, 1])
-        self._z_plot = LinePlot(color=[0, 0, 1, 1])
+
+        self._x_filt_state: Optional = None
+        self._y_filt_state: Optional = None
+        self._z_filt_state: Optional = None
+        self._show_x: bool = True
+        self._show_y: bool = True
+        self._show_z: bool = True
+        self._show_abs: bool = False
+        self._data: Optional[MeasurementsChunk] = None
+        self._data_filtered: Optional[MeasurementsChunk] = None
+        self._data_decimated: Optional[MeasurementsChunk] = None
+        self._x_plot: Optional[LinePlot] = LinePlot(color=[1, 0, 0, 1])
+        self._y_plot: Optional[LinePlot] = LinePlot(color=[0, 1, 0, 1])
+        self._z_plot: Optional[LinePlot] = LinePlot(color=[0, 0, 1, 1])
         self.add_plot(self._x_plot)
         self.add_plot(self._y_plot)
         self.add_plot(self._z_plot)
-        self._update_aafilter()
+        self.reset()
 
     def _update_aafilter(self):
         _MIN_SIN_SAMPLES = 10
@@ -142,17 +141,17 @@ class CustomGraph(Graph):
         self._y_filt_state = np.zeros((self._aafilter.shape[0], 2))
         self._z_filt_state = np.zeros((self._aafilter.shape[0], 2))
 
-    def update_data(self, chunk: ReadingsChunk):
+    def update_data(self, chunk: MeasurementsChunk):
         self._data.extend(chunk)
 
-        filtered_chunk = ReadingsChunk(x=[], y=[], z=[], t=chunk.t)
+        filtered_chunk = MeasurementsChunk(x=[], y=[], z=[], t=chunk.t)
         filtered_chunk.x, self._x_filt_state = signal.sosfilt(self._aafilter, chunk.x, zi=self._x_filt_state)
         filtered_chunk.y, self._y_filt_state = signal.sosfilt(self._aafilter, chunk.y, zi=self._y_filt_state)
         filtered_chunk.z, self._z_filt_state = signal.sosfilt(self._aafilter, chunk.z, zi=self._z_filt_state)
         self._data_filtered.extend(filtered_chunk)
 
         q = int(self._data_fs * self._time_range / self._MAX_PLOT_POINTS)
-        decimated_chunk = ReadingsChunk([], [], [], [])
+        decimated_chunk = MeasurementsChunk([], [], [], [])
         decimated_chunk.t = [filtered_chunk.t[i] for i in range(0, len(filtered_chunk.t), q)]
         decimated_chunk.x = [filtered_chunk.x[i] for i in range(0, len(filtered_chunk.x), q)]
         decimated_chunk.y = [filtered_chunk.y[i] for i in range(0, len(filtered_chunk.y), q)]
@@ -175,6 +174,17 @@ class CustomGraph(Graph):
         if self._show_z:
             self._z_plot.points = [(self._data_decimated.t[i], self._data_decimated.z[i]) for i in
                                    range(s, len(self._data_decimated.t))]
+
+    def reset(self):
+        self.xmax = self._time_range
+        self.xmin = self.xmax - self._time_range
+        self._data: MeasurementsChunk = MeasurementsChunk([], [], [], [])
+        self._data_filtered: MeasurementsChunk = MeasurementsChunk([], [], [], [])
+        self._data_decimated: MeasurementsChunk = MeasurementsChunk([], [], [], [])
+        self._x_plot.points = []
+        self._y_plot.points = []
+        self._z_plot.points = []
+        self._update_aafilter()
 
 
 class GuiLayout(BoxLayout):

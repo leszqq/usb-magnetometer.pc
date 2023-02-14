@@ -1,13 +1,15 @@
 import asyncio
 from typing import Optional
 
-from custom_types import Vector
+from custom_types import Vector, MeasurementsChunk
 from interfaces.i_sensor_controller import ISensorController, SensorRange
 from interfaces.i_measurement_producer import IMeasurementProducer
 from interfaces.i_measurement_consumer import IMeasurementConsumer
 import logging
 import asyncio
 import math
+import numpy as np
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,16 +55,23 @@ class SensorStub(ISensorController, IMeasurementProducer):
         self._measurement_consumer = consumer
 
     async def _generate_readings(self):
+        UPDATE_PERIOD = 0.05
+        SAMPLING_RATE = 20000
+        SAMPLES_PER_UPDATE = int(SAMPLING_RATE * UPDATE_PERIOD)
+        period = 0
         try:
             while True:
-                await asyncio.sleep(2)
+                await asyncio.sleep(UPDATE_PERIOD)
                 if self._measurement_consumer:
-                    fake_measurements = list()
-                    for i in range(100):
-                        v = Vector(x=0.01 * math.sin(2 * math.pi * i / 100),
-                                   y=0.01 * math.sin(2 * math.pi * i / 100 + 1),
-                                   z=0.01 * math.sin(2 * math.pi * i / 100 + 2))
-                        fake_measurements.append(v)
+                    t = np.linspace((period * SAMPLES_PER_UPDATE) / SAMPLING_RATE,
+                                    ((1 + period) * SAMPLES_PER_UPDATE - 1) / SAMPLING_RATE,
+                                    SAMPLES_PER_UPDATE)
+                    period += 1
+                    x = 20 + 30 * np.sin(2 * 0.333 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
+                    y = 20 * np.sin(2 * 1 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
+                    z = 10 * t
+                    # z = 40 * np.sin(2 * 4 * np.pi * t)# + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
+                    fake_measurements = MeasurementsChunk(t, x, y, z)
                     self._measurement_consumer.feed_measurements(fake_measurements)
         except:
             logger.info("_generate_readings cancelled")

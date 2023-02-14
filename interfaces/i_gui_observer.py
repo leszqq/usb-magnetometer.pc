@@ -22,3 +22,13 @@ class IGuiObserver(ABC):
     @abstractmethod
     def on_100_mt_range_button(self) -> None:
         pass
+    
+    @abstractmethod
+    def on_explore_data_button(self) -> None:
+        pass
+
+    @abstractmethod
+    def on_save_data_button(self) -> None:
+        pass
+
+    
