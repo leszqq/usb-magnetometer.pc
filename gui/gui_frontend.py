@@ -165,16 +165,18 @@ class CustomGraph(Graph):
 
         s = next(x for x, val in enumerate(self._data_decimated.t) if val > self.xmin)
 
-        if self._show_x:
-            self._x_plot.points = [(self._data_decimated.t[i], self._data_decimated.x[i]) for i in
-                                   range(s, len(self._data_decimated.t))]
-        if self._show_y:
-            self._y_plot.points = [(self._data_decimated.t[i], self._data_decimated.y[i]) for i in
-                                   range(s, len(self._data_decimated.t))]
-        if self._show_z:
-            self._z_plot.points = [(self._data_decimated.t[i], self._data_decimated.z[i]) for i in
-                                   range(s, len(self._data_decimated.t))]
-
+        try:
+            if self._show_x:
+                self._x_plot.points = [(self._data_decimated.t[i], self._data_decimated.x[i]) for i in
+                                       range(s, len(self._data_decimated.t))]
+            if self._show_y:
+                self._y_plot.points = [(self._data_decimated.t[i], self._data_decimated.y[i]) for i in
+                                       range(s, len(self._data_decimated.t))]
+            if self._show_z:
+                self._z_plot.points = [(self._data_decimated.t[i], self._data_decimated.z[i]) for i in
+                                       range(s, len(self._data_decimated.t))]
+        except IndexError:
+            print("XD")
     def reset(self):
         self.xmax = self._time_range
         self.xmin = self.xmax - self._time_range

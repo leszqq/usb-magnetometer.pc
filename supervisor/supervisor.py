@@ -2,14 +2,15 @@ from interfaces.i_gui_observer import IGuiObserver
 from interfaces.i_gui_controller import IGuiController
 from interfaces.i_measurement_consumer import IMeasurementConsumer
 from interfaces.i_sensor_controller import ISensorController, SensorRange
-from custom_types import Vector, MeasurementsChunk
-from typing import List
+from interfaces.i_sensor_controller import SensorCommunicationError
+from custom_types import MeasurementsChunk
 import asyncio
 from enum import Enum
 import logging
 from time import perf_counter
 
 logger = logging.getLogger(__name__)
+
 
 class AppState(Enum):
     SENSOR_DISCONNECTED = 1
@@ -23,7 +24,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._gui = gui_controller
         self._sensor = sensor_controller
         self._current_sensor_range = sensor_controller.get_current_range()
-        self._measurements_queue = asyncio.Queue() # TODO: set type of readings list
+        self._measurements_queue = asyncio.Queue()  # TODO: set type of readings list
 
         self._app_state = AppState.SENSOR_DISCONNECTED
         self._update_gui_buttons()
@@ -64,20 +65,27 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
             self._measurements_queue.put_nowait(measurements)
             pass
 
-
     async def _connect_to_sensor(self):
-        await self._sensor.connect_and_init()
+        while True:
+            try:
+                self._sensor.connect_and_init()
+                break
+            except SensorCommunicationError:
+                self._gui.show_info('Probe not connected, multiple probes connected or ftd2xx drivers not installed',
+                                    warning=True)
+                await asyncio.sleep(0.5)
         self._app_state = AppState.STANDBY
         self._update_gui_buttons()
 
     async def _read(self):
         self._flush_measurements_queue()
-        await self._sensor.start_stream()
+        self._sensor.start_stream()
         self._app_state = AppState.READING
         self._update_gui_buttons()
 
         while True:
             measurements: MeasurementsChunk = await self._measurements_queue.get()
+            print("Collecting from queue")
             self._gui.update_measurement_text_field(measurements)
             self._gui.update_graph(measurements)
             # TODO: buffer reading, so it can be stored in CSV later

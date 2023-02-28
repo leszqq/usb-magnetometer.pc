@@ -1,4 +1,5 @@
 from sensor.sensor_stub import SensorStub
+from sensor.sensor import Sensor
 from gui.gui_stub import GuiStub
 from gui.gui import Gui
 from supervisor.supervisor import Supervisor
@@ -11,7 +12,7 @@ async def main():
     # gui = GuiStub()
     gui = Gui()
     await gui.wait_until_initialized()
-    sensor = SensorStub()
+    sensor = Sensor()
     supervisor = Supervisor(gui_controller=gui, sensor_controller=sensor)
     gui.attach_observer(supervisor)
     sensor.attach_consumer(supervisor)

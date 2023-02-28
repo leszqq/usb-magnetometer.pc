@@ -8,11 +8,19 @@ class SensorRange(Enum):
     PLUS_MINUS_50_MT = 2
     PLUS_MINUS_100_MT = 3
 
+    def to_float(self):
+        return 25.0 if self.value == SensorRange.PLUS_MINUS_25_MT \
+            else 50.0 if self.value == SensorRange.PLUS_MINUS_50_MT \
+            else 100.0
+
+
+class SensorCommunicationError(Exception):
+    pass
 
 class ISensorController(ABC):
 
     @abstractmethod
-    async def connect_and_init(self) -> None:
+    def connect_and_init(self) -> bool:
         pass
 
     @abstractmethod
