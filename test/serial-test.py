@@ -10,9 +10,9 @@ MESSAGE_TYPE_TEST = 0x00
 MESSAGE_TYPE_RESET = 0x01
 MESSAGE_TYPE_GET_READING = 0x02
 MESSAGE_TYPE_START_STREAM = 0x03
-MESSAGE_TYPE_STREAM_CHUNK = 0x04
+MESSAGE_TYPE_STOP_STREAM = 0x04
 MESSAGE_TYPE_READ_REGISTER = 0x05
-CHUNK_PACKET_SIZE = 3002
+CHUNK_PACKET_SIZE = 480
 
 
 def simple_test():
@@ -71,7 +71,7 @@ def connected_test():
 
 def stream_test():
     d = ftd.open(0)
-    d.setBaudRate(666666)
+    d.setBaudRate(921600)
     d.setTimeouts(200, 200)
 
     print(f"testing")
@@ -102,6 +102,23 @@ def stream_test():
     d.write(bytes([MESSAGE_TYPE_START_STREAM, 0]))
     response = d.read(2)
     print(f"got {binascii.hexlify(bytearray(response), ' ')}")
+    chunk = d.read(CHUNK_PACKET_SIZE)
+    print(f"got chunk: {chunk}")
+    print(f"chunk size: {len(chunk)}")
+    chunk = d.read(CHUNK_PACKET_SIZE)
+    print(f"got chunk: {chunk}")
+    print(f"chunk size: {len(chunk)}")
+    d.write(bytes([MESSAGE_TYPE_STOP_STREAM, 0]))
+    chunk = d.read(CHUNK_PACKET_SIZE)
+    print(f"got chunk: {chunk}")
+    print(f"chunk size: {len(chunk)}")
+    d.write(bytes([MESSAGE_TYPE_START_STREAM, 0]))
+    response = d.read(2)
+    print(f"got {binascii.hexlify(bytearray(response), ' ')}")
+    chunk = d.read(CHUNK_PACKET_SIZE)
+    print(f"got chunk: {chunk}")
+    print(f"chunk size: {len(chunk)}")
+    d.write(bytes([MESSAGE_TYPE_STOP_STREAM, 0]))
     chunk = d.read(CHUNK_PACKET_SIZE)
     print(f"got chunk: {chunk}")
     print(f"chunk size: {len(chunk)}")

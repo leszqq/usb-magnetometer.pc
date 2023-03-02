@@ -85,7 +85,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
 
         while True:
             measurements: MeasurementsChunk = await self._measurements_queue.get()
-            print("Collecting from queue")
+            # print("Collecting from queue")
             self._gui.update_measurement_text_field(measurements)
             self._gui.update_graph(measurements)
             # TODO: buffer reading, so it can be stored in CSV later

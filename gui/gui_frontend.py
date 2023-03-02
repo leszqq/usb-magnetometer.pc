@@ -14,7 +14,7 @@ from custom_types import MeasurementsChunk
 import asyncio
 from math import sqrt
 from time import perf_counter
-
+from constants import FS
 
 class CustomButton(Button, HoverBehavior):
     active = BooleanProperty(False)
@@ -75,7 +75,6 @@ class FilteredMeasurements(BoxLayout):
 
     def __init__(self, **kwargs):
         super(FilteredMeasurements, self).__init__(**kwargs)
-        self._data_fs = 10000
         self._next_update_time = 0.0
         self._x_filt_state = None
         self._y_filt_state = None
@@ -91,15 +90,15 @@ class FilteredMeasurements(BoxLayout):
         if chunk.t[-1] > self._next_update_time:
             self._next_update_time += 0.2
             m = np.sqrt(x[-1] ** 2 + y[-1] ** 2 + z[-1] ** 2)
-            self.x_text = f"  Bx:{x[-1]:7.3f} mT"
-            self.y_text = f"By:{y[-1]:7.3f} mT"
-            self.z_text = f"Bz:{z[-1]:7.3f} mT"
-            self.m_text = f"|B|:{m:7.3f} mT"
+            self.x_text = f"  Bx:{x[-1]:7.2f} mT"
+            self.y_text = f"By:{y[-1]:7.2f} mT"
+            self.z_text = f"Bz:{z[-1]:7.2f} mT"
+            self.m_text = f"|B|:{m:7.2f} mT"
 
 
     def _update_filters(self):
-        self._aafilter = signal.iirfilter(N=8, Wn=0.25,
-                                          btype='low', ftype='butter', output='sos', fs=self._data_fs)
+        self._aafilter = signal.iirfilter(N=5, Wn=2,
+                                          btype='low', ftype='butter', output='sos', fs=FS)
 
         self._x_filt_state = np.zeros((self._aafilter.shape[0], 2))
         self._y_filt_state = np.zeros((self._aafilter.shape[0], 2))
@@ -111,7 +110,6 @@ class CustomGraph(Graph):
     def __init__(self, **kwargs):
         super(CustomGraph, self).__init__(**kwargs)
         self._MAX_PLOT_POINTS = 1000
-        self._data_fs = 10000
         self._time_range = 10.0
 
         self._x_filt_state: Optional = None
@@ -133,9 +131,9 @@ class CustomGraph(Graph):
         self.reset()
 
     def _update_aafilter(self):
-        _MIN_SIN_SAMPLES = 10
+        _MIN_SIN_SAMPLES = 2
         self._aafilter = signal.iirfilter(N=8, Wn=(self._MAX_PLOT_POINTS / self._time_range) / _MIN_SIN_SAMPLES,
-                                          btype='low', ftype='butter', output='sos', fs=self._data_fs)
+                                          btype='low', ftype='butter', output='sos', fs=FS)
 
         self._x_filt_state = np.zeros((self._aafilter.shape[0], 2))
         self._y_filt_state = np.zeros((self._aafilter.shape[0], 2))
@@ -150,7 +148,7 @@ class CustomGraph(Graph):
         filtered_chunk.z, self._z_filt_state = signal.sosfilt(self._aafilter, chunk.z, zi=self._z_filt_state)
         self._data_filtered.extend(filtered_chunk)
 
-        q = int(self._data_fs * self._time_range / self._MAX_PLOT_POINTS)
+        q = int(FS * self._time_range / self._MAX_PLOT_POINTS)
         decimated_chunk = MeasurementsChunk([], [], [], [])
         decimated_chunk.t = [filtered_chunk.t[i] for i in range(0, len(filtered_chunk.t), q)]
         decimated_chunk.x = [filtered_chunk.x[i] for i in range(0, len(filtered_chunk.x), q)]

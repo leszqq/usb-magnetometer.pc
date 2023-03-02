@@ -8,15 +8,15 @@ import numpy as np
 from ftd2xx import DeviceError, FTD2XX
 from typing import List
 
+from constants import FS
 from custom_types import Vector, MeasurementsChunk
 from interfaces.i_measurement_consumer import IMeasurementConsumer
 from interfaces.i_measurement_producer import IMeasurementProducer
 from interfaces.i_sensor_controller import ISensorController, SensorRange, SensorCommunicationError
 
 _RESPONSE_SIZE = 2
-_CHUNK_PACKET_SIZE = 3002
-_FS = 3100.0
-_CHUNK_PERIOD = 0.31
+_CHUNK_PACKET_SIZE = 480
+_CHUNK_PERIOD = (_CHUNK_PACKET_SIZE / 6) / FS
 
 
 class MessageType(IntEnum):
@@ -24,7 +24,7 @@ class MessageType(IntEnum):
     RESET = 1
     GET_READING = 2
     START_STREAM = 3
-    STREAM_CHUNK = 4
+    STOP_STREAM = 4
     READ_REGISTER = 5
 
 
@@ -63,13 +63,16 @@ logger = logging.getLogger(__name__)
 class Sensor(ISensorController, IMeasurementProducer):
 
     def __init__(self):
-        self._sensor_range = SensorRange.PLUS_MINUS_25_MT
+        self._sensor_range = SensorRange.PLUS_MINUS_50_MT
         self._measurement_consumer: Optional[IMeasurementConsumer] = None
         self._device: Optional[FTD2XX] = None
         self._connected = False
         self._t0 = 0.0
+        self._reader_task: Optional = None
+        self._stream_reading_done = True
 
     def connect_and_init(self) -> bool:
+
         devices = ftd.listDevices()
         if devices is None or len(devices) != 1:
             raise SensorCommunicationError
@@ -105,6 +108,9 @@ class Sensor(ISensorController, IMeasurementProducer):
 
     async def stop_stream(self) -> None:
         """ It is guaranteed that sensor will not stream more readings after this coroutine completes. """
+        Request(self._device, MessageType.STOP_STREAM, 0).send()
+
+
 
     def get_current_range(self) -> SensorRange:
         return self._sensor_range
@@ -122,23 +128,35 @@ class Sensor(ISensorController, IMeasurementProducer):
     def _stream_reader_task(self):
 
         def scale(data: bytes):
-            return (np.int16((data[0] << 8) | data[1]) / 2.0 ** 16) * 2.0 * self._sensor_range.to_float()
+            return (np.int16((data[0] << 8) | data[1]) / 2.0 ** 16) * self._sensor_range.to_float()
 
+        i = 0
         while True:
+            i += 1
             t0 = perf_counter()
 
             data: bytes = self._device.read(_CHUNK_PACKET_SIZE)
             print(f"chunk of size: {len(data)} read in {perf_counter() - t0}")
+            # print(f"{data}")
 
-            if data[0] != MessageType.STREAM_CHUNK or data[1] != 0:
-                raise SensorCommunicationError
-            # t: List[float] = list(np.float_(np.arange(self._t0, self._t0 + _CHUNK_PERIOD, 1 / _FS)))
+            # if data[0] != MessageType.STREAM_CHUNK or data[1] != 0:
+            #     raise SensorCommunicationError
+            # t: List[float] = list(np.float_(np.arange(self._t0, self._t0 + _CHUNK_PERIOD, 1 / FS)))
+            # self._t0 += _CHUNK_PERIOD
+            # x: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[2::6], data[3::6])]
+            # # y = np.zeros(1000)
+            # # z = np.zeros(1000)
+            # y: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[4::6], data[5::6])]
+            # z: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[6::6], data[7::6])]
+
+
             self._t0 += _CHUNK_PERIOD
-            x: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[2::6], data[3::6])]
-            # y = np.zeros(1000)
-            # z = np.zeros(1000)
-            y: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[4::6], data[5::6])]
-            z: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[6::6], data[7::6])]
+            if not any(data):
+                print("Stopped")
+                break
+            x: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[0::6], data[1::6])]
+            y: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[2::6], data[3::6])]
+            z: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[4::6], data[5::6])]
             t: List[float] = list((np.linspace(self._t0, self._t0 + _CHUNK_PERIOD, len(x), False, dtype=float)))
             chunk = MeasurementsChunk(t, x, y, z)
             self._measurement_consumer.feed_measurements(chunk)
