@@ -34,6 +34,9 @@ class Gui(IGuiController, IGuiSubject):
     def update_measurement_text_field(self, measurements: MeasurementsChunk) -> None:
         self._gui_app.root_layout.ids.filtered_measurements.update(measurements)
 
+    def reset_measurement_text_field(self) -> None:
+        self._gui_app.root_layout.ids.filtered_measurements.reset()
+
     # async def test(self):
     #     period = 0
     #     while True:

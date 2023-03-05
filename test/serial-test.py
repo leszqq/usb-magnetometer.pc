@@ -12,6 +12,7 @@ MESSAGE_TYPE_GET_READING = 0x02
 MESSAGE_TYPE_START_STREAM = 0x03
 MESSAGE_TYPE_STOP_STREAM = 0x04
 MESSAGE_TYPE_READ_REGISTER = 0x05
+MESSAGE_TYPE_SET_RANGE = 0x06
 CHUNK_PACKET_SIZE = 480
 
 
@@ -112,16 +113,9 @@ def stream_test():
     chunk = d.read(CHUNK_PACKET_SIZE)
     print(f"got chunk: {chunk}")
     print(f"chunk size: {len(chunk)}")
-    d.write(bytes([MESSAGE_TYPE_START_STREAM, 0]))
+    d.write(bytes([MESSAGE_TYPE_SET_RANGE, 0]))
     response = d.read(2)
     print(f"got {binascii.hexlify(bytearray(response), ' ')}")
-    chunk = d.read(CHUNK_PACKET_SIZE)
-    print(f"got chunk: {chunk}")
-    print(f"chunk size: {len(chunk)}")
-    d.write(bytes([MESSAGE_TYPE_STOP_STREAM, 0]))
-    chunk = d.read(CHUNK_PACKET_SIZE)
-    print(f"got chunk: {chunk}")
-    print(f"chunk size: {len(chunk)}")
 
 stream_test()
 

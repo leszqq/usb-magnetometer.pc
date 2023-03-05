@@ -22,3 +22,10 @@ class MeasurementsChunk:
         self.y.extend(new.y)
         self.z.extend(new.z)
 
+    def drop_older_than(self, n) -> None:
+        self.t = self.t[-n:]
+        self.x = self.x[-n:]
+        self.y = self.y[-n:]
+        self.z = self.z[-n:]
+
+

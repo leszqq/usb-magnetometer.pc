@@ -26,6 +26,7 @@ class MessageType(IntEnum):
     START_STREAM = 3
     STOP_STREAM = 4
     READ_REGISTER = 5
+    SET_RANGE = 6
 
 
 class Request:
@@ -92,8 +93,12 @@ class Sensor(ISensorController, IMeasurementProducer):
         except DeviceError:
             raise SensorCommunicationError
 
-    async def reconfigure(self, sensor_range: SensorRange) -> None:
-        pass
+    def reconfigure(self, sensor_range: SensorRange) -> None:
+        Request(self._device, MessageType.SET_RANGE, int(sensor_range)).send()
+        data = Response(self._device, MessageType.SET_RANGE).read()
+        if data != bytes([0x00]):
+            raise SensorCommunicationError
+        self._sensor_range = sensor_range
 
     async def read(self) -> Vector:
         pass
@@ -106,11 +111,9 @@ class Sensor(ISensorController, IMeasurementProducer):
             raise SensorCommunicationError
         asyncio.create_task(asyncio.to_thread(self._stream_reader_task))
 
-    async def stop_stream(self) -> None:
+    def stop_stream(self) -> None:
         """ It is guaranteed that sensor will not stream more readings after this coroutine completes. """
         Request(self._device, MessageType.STOP_STREAM, 0).send()
-
-
 
     def get_current_range(self) -> SensorRange:
         return self._sensor_range
@@ -128,31 +131,11 @@ class Sensor(ISensorController, IMeasurementProducer):
     def _stream_reader_task(self):
 
         def scale(data: bytes):
-            return (np.int16((data[0] << 8) | data[1]) / 2.0 ** 16) * self._sensor_range.to_float()
+            return 2 * (np.int16((data[0] << 8) | data[1]) / 2.0 ** 16) * self._sensor_range.to_float()
 
-        i = 0
         while True:
-            i += 1
-            t0 = perf_counter()
-
             data: bytes = self._device.read(_CHUNK_PACKET_SIZE)
-            print(f"chunk of size: {len(data)} read in {perf_counter() - t0}")
-            # print(f"{data}")
-
-            # if data[0] != MessageType.STREAM_CHUNK or data[1] != 0:
-            #     raise SensorCommunicationError
-            # t: List[float] = list(np.float_(np.arange(self._t0, self._t0 + _CHUNK_PERIOD, 1 / FS)))
-            # self._t0 += _CHUNK_PERIOD
-            # x: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[2::6], data[3::6])]
-            # # y = np.zeros(1000)
-            # # z = np.zeros(1000)
-            # y: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[4::6], data[5::6])]
-            # z: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[6::6], data[7::6])]
-
-
-            self._t0 += _CHUNK_PERIOD
             if not any(data):
-                print("Stopped")
                 break
             x: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[0::6], data[1::6])]
             y: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[2::6], data[3::6])]
@@ -160,3 +143,5 @@ class Sensor(ISensorController, IMeasurementProducer):
             t: List[float] = list((np.linspace(self._t0, self._t0 + _CHUNK_PERIOD, len(x), False, dtype=float)))
             chunk = MeasurementsChunk(t, x, y, z)
             self._measurement_consumer.feed_measurements(chunk)
+            self._t0 += _CHUNK_PERIOD
+

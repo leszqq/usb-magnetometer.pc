@@ -10,6 +10,10 @@ class IGuiController(ABC):
         pass
 
     @abstractmethod
+    def reset_measurement_text_field(self) -> None:
+        pass
+
+    @abstractmethod
     def update_graph(self, measurements: MeasurementsChunk) -> None:
         pass
 
