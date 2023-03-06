@@ -7,6 +7,7 @@ from custom_types import MeasurementsChunk
 import asyncio
 from enum import Enum
 import logging
+from file_handler.file_handler import FileHandler
 from time import perf_counter
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._gui = gui_controller
         self._sensor = sensor_controller
         self._measurements_queue = asyncio.Queue()  # TODO: set type of readings list
-
+        self._measurements_buffer = MeasurementsChunk([], [], [], [])
         self._app_state = AppState.SENSOR_DISCONNECTED
         self._update_gui_buttons()
         asyncio.create_task(self._connect_to_sensor())
@@ -58,6 +59,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
 
     def on_save_data_button(self) -> None:
         print("Saving data to csv")
+        FileHandler().save_to_file(self._measurements_buffer)
 
     def feed_measurements(self, measurements: MeasurementsChunk) -> None:
         if self._app_state == AppState.READING:
@@ -88,6 +90,8 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
             self._gui.update_measurement_text_field(measurements)
             self._gui.update_graph(measurements)
             # TODO: buffer reading, so it can be stored in CSV later
+            self._measurements_buffer.extend(measurements)
+            self._measurements_buffer.drop_older_than(25000) # TODO: TMP code
 
     def _stop_reading(self):
         self._sensor.stop_stream()
