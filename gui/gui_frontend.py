@@ -5,16 +5,14 @@ from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivymd.app import MDApp
 from kivymd.uix.behaviors import HoverBehavior
 from kivy_garden.graph import Graph, LinePlot
 from scipy import signal
 from typing import Optional, Callable
 from custom_types import MeasurementsChunk
 import asyncio
-from math import sqrt
-from time import perf_counter
 from constants import FS
+
 
 class CustomButton(Button, HoverBehavior):
     active = BooleanProperty(False)
@@ -82,6 +80,13 @@ class FilteredMeasurements(BoxLayout):
         self._next_update_time: Optional[int] = None
         self.reset()
 
+        # self._xmax = -100.0
+        # self._xmin = 100.0
+        # self._ymax = -100.0
+        # self._ymin = 100.0
+        # self._zmax = -100.0
+        # self._zmin = 100.0
+
     def reset(self):
         self._next_update_time = 0.0
         self._update_filters()
@@ -91,6 +96,19 @@ class FilteredMeasurements(BoxLayout):
         y, self._y_filt_state = signal.sosfilt(self._aafilter, chunk.y, zi=self._y_filt_state)
         z, self._z_filt_state = signal.sosfilt(self._aafilter, chunk.z, zi=self._z_filt_state)
 
+        # if min(x) < self._xmin:
+        #     self._xmin = min(x)
+        # if max(x) > self._xmax:
+        #     self._xmax = max(x)
+        # if min(y) < self._ymin:
+        #     self._ymin = min(y)
+        # if max(y) > self._ymax:
+        #     self._ymax = max(y)
+        # if min(z) < self._zmin:
+        #     self._zmin = min(z)
+        # if max(z) > self._zmax:
+        #     self._zmax = max(z)
+
         if chunk.t[-1] > self._next_update_time:
             self._next_update_time += 0.2
             m = np.sqrt(x[-1] ** 2 + y[-1] ** 2 + z[-1] ** 2)
@@ -99,6 +117,7 @@ class FilteredMeasurements(BoxLayout):
             self.z_text = f"Bz:{z[-1]:7.2f} mT"
             self.m_text = f"|B|:{m:7.2f} mT"
 
+            # print(f" x_off: {(self._xmin + self._xmax)/2}, y_off: {(self._ymin + self._ymax) / 2}, z_off: {(self._zmin + self._zmax) / 2}")
 
     def _update_filters(self):
         self._aafilter = signal.iirfilter(N=5, Wn=2,
@@ -122,14 +141,16 @@ class CustomGraph(Graph):
         self._show_x: bool = True
         self._show_y: bool = True
         self._show_z: bool = True
-        self._show_abs: bool = False
+        self._show_abs: bool = True
         self._data_decimated: Optional[MeasurementsChunk] = None
         self._x_plot: Optional[LinePlot] = LinePlot(color=[1, .1, 0, 1])
         self._y_plot: Optional[LinePlot] = LinePlot(color=[.3, 1, 0, 1])
         self._z_plot: Optional[LinePlot] = LinePlot(color=[0, 0.4, 1, 1])
+        self._abs_plot: Optional[LinePlot] = LinePlot(color=[1, 1, 1, 1])
         self.add_plot(self._x_plot)
         self.add_plot(self._y_plot)
         self.add_plot(self._z_plot)
+        self.add_plot(self._abs_plot)
         self.reset()
 
     def on_touch_down(self, touch):
@@ -146,10 +167,10 @@ class CustomGraph(Graph):
                 if self.ymax < 5.0:
                     self.ymax += .5
                     self.ymin -= .5
-                elif self.ymax < 100.0:
+                elif self.ymax < 175.0:
                     self.ymax += 5.0
                     self.ymin -= 5.0
-            self.y_ticks_major = (self.ymax - self.ymin)/ 10.0
+            self.y_ticks_major = (self.ymax - self.ymin) / 10.0
 
     def _update_aafilter(self):
         _MIN_SIN_SAMPLES = 3
@@ -192,8 +213,14 @@ class CustomGraph(Graph):
             if self._show_z:
                 self._z_plot.points = [(self._data_decimated.t[i], self._data_decimated.z[i]) for i in
                                        range(len(self._data_decimated.t))]
+            if self._show_abs:
+                self._abs_plot.points = [(self._data_decimated.t[i], np.sqrt(self._data_decimated.x[i] ** 2 +
+                                                                             self._data_decimated.y[i] ** 2 +
+                                                                             self._data_decimated.z[i] ** 2)) for i in
+                                         range(len(self._data_decimated.t))]
         except IndexError:
             print("XD")
+
     def reset(self):
         self.xmax = self._time_range
         self.xmin = self.xmax - self._time_range

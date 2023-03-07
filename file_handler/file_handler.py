@@ -6,7 +6,6 @@ from pandas import read_csv, DataFrame
 from datetime import datetime
 
 from plotly.subplots import make_subplots
-import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -39,9 +38,9 @@ class FileHandler(IFileExplorer, IFileSaver):
 
         def make_plot(df: DataFrame):
             fig = make_subplots(rows=1, cols=1, shared_xaxes=True)
-            fig.add_trace(go.Scattergl(x=df['t [s]'], y=df['Bx [mT]'], name='Bx [mT]'), row=1, col=1)
-            fig.add_trace(go.Scattergl(x=df['t [s]'], y=df['By [mT]'], name='By [mT]'), row=1, col=1)
-            fig.add_trace(go.Scattergl(x=df['t [s]'], y=df['Bz [mT]'], name='Bz [mT]'), row=1, col=1)
+            fig.add_trace(go.Scattergl(x=df['t [s]'], y=df['Bx [mT]'], name='Bx [mT]', line=dict(color="#ff0000")), row=1, col=1)
+            fig.add_trace(go.Scattergl(x=df['t [s]'], y=df['By [mT]'], name='By [mT]', line=dict(color="#00ff00")), row=1, col=1)
+            fig.add_trace(go.Scattergl(x=df['t [s]'], y=df['Bz [mT]'], name='Bz [mT]', line=dict(color="#0000ff")), row=1, col=1)
             fig.update_layout(title_text=f"{file.name}")
             fig.update_xaxes(title_text="Time [s]", row=1, col=1)
             fig.update_yaxes(title_text="Magnetic Flux Density B [mT]", row=1, col=1)

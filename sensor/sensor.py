@@ -18,6 +18,14 @@ _RESPONSE_SIZE = 2
 _CHUNK_PACKET_SIZE = 480
 _CHUNK_PERIOD = (_CHUNK_PACKET_SIZE / 6) / FS
 
+_X_OFFSET_25_50 = 0.038
+_Y_OFFSET_25_50 = 0.008
+_Z_OFFSET_25_50 = -0.039
+
+_X_OFFSET_100 = -0.188
+_Y_OFFSET_100 = -0.180
+_Z_OFFSET_100 = -0.179
+
 
 class MessageType(IntEnum):
     TEST = 0
@@ -51,7 +59,6 @@ class Response:
         if message_type != self._message_type:
             raise SensorCommunicationError
         return data
-        # TODO: add check if result ok
 
     @staticmethod
     def _decode(bytes_list: bytes) -> Tuple[MessageType, int]:
@@ -141,6 +148,19 @@ class Sensor(ISensorController, IMeasurementProducer):
             y: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[2::6], data[3::6])]
             z: List[float] = [scale(bytes([msb, lsb])) for msb, lsb in zip(data[4::6], data[5::6])]
             t: List[float] = list((np.linspace(self._t0, self._t0 + _CHUNK_PERIOD, len(x), False, dtype=float)))
+
+            if self._sensor_range == SensorRange.PLUS_MINUS_100_MT:
+                x_off = _X_OFFSET_100
+                y_off = _Y_OFFSET_100
+                z_off = _Z_OFFSET_100
+            else:
+                x_off = _X_OFFSET_25_50
+                y_off = _Y_OFFSET_25_50
+                z_off = _Z_OFFSET_25_50
+
+            x = [e - x_off for e in x]
+            y = [e - y_off for e in y]
+            z = [e - z_off for e in z]
             chunk = MeasurementsChunk(t, x, y, z)
             self._measurement_consumer.feed_measurements(chunk)
             self._t0 += _CHUNK_PERIOD
