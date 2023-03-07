@@ -113,7 +113,7 @@ class CustomGraph(Graph):
 
     def __init__(self, **kwargs):
         super(CustomGraph, self).__init__(**kwargs)
-        self._MAX_PLOT_POINTS = 1500
+        self._MAX_PLOT_POINTS = 1000
         self._time_range = 10.0
 
         self._x_filt_state: Optional = None
@@ -124,16 +124,35 @@ class CustomGraph(Graph):
         self._show_z: bool = True
         self._show_abs: bool = False
         self._data_decimated: Optional[MeasurementsChunk] = None
-        self._x_plot: Optional[LinePlot] = LinePlot(color=[1, 0, 0, 1])
-        self._y_plot: Optional[LinePlot] = LinePlot(color=[0, 1, 0, 1])
-        self._z_plot: Optional[LinePlot] = LinePlot(color=[0, 0, 1, 1])
+        self._x_plot: Optional[LinePlot] = LinePlot(color=[1, .1, 0, 1])
+        self._y_plot: Optional[LinePlot] = LinePlot(color=[.3, 1, 0, 1])
+        self._z_plot: Optional[LinePlot] = LinePlot(color=[0, 0.4, 1, 1])
         self.add_plot(self._x_plot)
         self.add_plot(self._y_plot)
         self.add_plot(self._z_plot)
         self.reset()
 
+    def on_touch_down(self, touch):
+        if touch.is_mouse_scrolling:
+            if touch.button == 'scrolldown':
+                print('down')
+                if self.ymax > 5.0:
+                    self.ymax -= 5.0
+                    self.ymin += 5.0
+                elif self.ymax > 0.5:
+                    self.ymax -= .5
+                    self.ymin += .5
+            elif touch.button == 'scrollup':
+                if self.ymax < 5.0:
+                    self.ymax += .5
+                    self.ymin -= .5
+                elif self.ymax < 100.0:
+                    self.ymax += 5.0
+                    self.ymin -= 5.0
+            self.y_ticks_major = (self.ymax - self.ymin)/ 10.0
+
     def _update_aafilter(self):
-        _MIN_SIN_SAMPLES = 2
+        _MIN_SIN_SAMPLES = 3
         self._aafilter = signal.iirfilter(N=8, Wn=(self._MAX_PLOT_POINTS / self._time_range) / _MIN_SIN_SAMPLES,
                                           btype='low', ftype='butter', output='sos', fs=FS)
 

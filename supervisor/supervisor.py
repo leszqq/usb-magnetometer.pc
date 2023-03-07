@@ -7,11 +7,13 @@ from custom_types import MeasurementsChunk
 import asyncio
 from enum import Enum
 import logging
-from file_handler.file_handler import FileHandler
+from file_handler.file_handler import FileHandler, InvalidFileError
 from time import perf_counter
+from constants import FS
 
 logger = logging.getLogger(__name__)
 
+_MAX_FILE_TIME = 120
 
 class AppState(Enum):
     SENSOR_DISCONNECTED = 1
@@ -33,6 +35,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
     def on_start_button(self) -> None:
         if self._app_state == AppState.STANDBY:
             self._app_state = AppState.TRANSITION
+            self._measurements_buffer = MeasurementsChunk([], [], [], [])
             self._gui.reset_graph()
             self._gui.reset_measurement_text_field()
             self._update_gui_buttons()
@@ -56,6 +59,11 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
 
     def on_explore_data_button(self) -> None:
         print("Starting plotly")
+        try:
+            FileHandler().explore_file()
+        except InvalidFileError:
+            self._gui.show_info('Invalid file selected',
+                                warning=True)
 
     def on_save_data_button(self) -> None:
         print("Saving data to csv")
@@ -85,13 +93,16 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._app_state = AppState.READING
         self._update_gui_buttons()
 
+        i = 0
         while True:
             measurements: MeasurementsChunk = await self._measurements_queue.get()
             self._gui.update_measurement_text_field(measurements)
             self._gui.update_graph(measurements)
-            # TODO: buffer reading, so it can be stored in CSV later
             self._measurements_buffer.extend(measurements)
-            self._measurements_buffer.drop_older_than(25000) # TODO: TMP code
+            i += 1
+            if i > 100:
+                i = 0
+                self._measurements_buffer.drop_older_than(int(FS * _MAX_FILE_TIME))
 
     def _stop_reading(self):
         self._sensor.stop_stream()

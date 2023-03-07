@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import List
-
+from typing import List, Any
+import numpy as np
 
 @dataclass
 class Vector:
@@ -27,5 +27,4 @@ class MeasurementsChunk:
         self.x = self.x[-n:]
         self.y = self.y[-n:]
         self.z = self.z[-n:]
-
 
