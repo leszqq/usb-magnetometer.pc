@@ -16,17 +16,6 @@ async def main():
     gui.attach_observer(supervisor)
     sensor.attach_consumer(supervisor)
 
-    # while True:
-    #     await asyncio.sleep(1)
-    #     tasks = asyncio.all_tasks()
-    #     print("")
-    #     for t in tasks:
-    #         print(t)
-    #     try:
-    #         await asyncio.wait_for(gui.wait_for_closed(), timeout=1.0)
-    #     except TimeoutError:
-    #         print('timeout!')
-
     await gui.wait_for_closed()
     supervisor.on_stop_button()
 
