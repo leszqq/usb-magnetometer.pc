@@ -8,8 +8,8 @@ import asyncio
 from enum import Enum
 import logging
 from file_handler.file_handler import FileHandler, InvalidFileError
-from time import perf_counter
 from constants import FS
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +26,11 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
     def __init__(self, gui_controller: IGuiController, sensor_controller: ISensorController):
         self._gui = gui_controller
         self._sensor = sensor_controller
-        self._measurements_queue = asyncio.Queue()  # TODO: set type of readings list
+        self._measurements_queue = asyncio.Queue()
         self._measurements_buffer = MeasurementsChunk([], [], [], [])
         self._app_state = AppState.SENSOR_DISCONNECTED
         self._update_gui_buttons()
+        self._reader_task: Optional[asyncio.Task] = None
         asyncio.create_task(self._connect_to_sensor())
 
     def on_start_button(self) -> None:
@@ -39,14 +40,13 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
             self._gui.reset_graph()
             self._gui.reset_measurement_text_field()
             self._update_gui_buttons()
-            asyncio.create_task(self._read())
+            self._reader_task = asyncio.create_task(self._read())
 
     def on_stop_button(self) -> None:
         if self._app_state == AppState.READING:
             self._app_state = AppState.TRANSITION
             self._update_gui_buttons()
             self._stop_reading()
-            pass
 
     def on_25_mt_range_button(self) -> None:
         self._change_range_if_needed(SensorRange.PLUS_MINUS_25_MT)
@@ -106,6 +106,7 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
 
     def _stop_reading(self):
         self._sensor.stop_stream()
+        self._reader_task.cancel()
         self._app_state = AppState.STANDBY
         self._update_gui_buttons()
 

@@ -22,9 +22,6 @@ class Gui(IGuiController, IGuiSubject):
         self._gui_app = GuifrontendApp()
         self._gui_task = asyncio.create_task(self._run())
 
-        # self._test_readings = ReadingsChunk([], [], [], [])
-        # asyncio.create_task(self.test())
-
     async def _run(self):
         await self._gui_app.async_run(async_lib='asyncio')
 
@@ -36,29 +33,6 @@ class Gui(IGuiController, IGuiSubject):
 
     def reset_measurement_text_field(self) -> None:
         self._gui_app.root_layout.ids.filtered_measurements.reset()
-
-    # async def test(self):
-    #     period = 0
-    #     while True:
-    #         SAMPLING_RATE = 20000
-    #         UPDATE_PERIOD = 0.05
-    #         SAMPLES_PER_UPDATE = int(SAMPLING_RATE * UPDATE_PERIOD)
-    #         await asyncio.sleep(UPDATE_PERIOD)
-    #         t = np.linspace((period * SAMPLES_PER_UPDATE) / SAMPLING_RATE,
-    #                         ((1 + period) * SAMPLES_PER_UPDATE - 1) / SAMPLING_RATE,
-    #                         SAMPLES_PER_UPDATE)
-    #         period += 1
-    #         x = 20 + 30 * np.sin(2 * 0.333 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
-    #         y = 20 * np.sin(2 * 1 * np.pi * t)  # + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
-    #         z = 10 * t
-    #         # z = 40 * np.sin(2 * 4 * np.pi * t)# + 30 * np.random.rand(t.size) - 30 * np.random.rand(t.size)
-    #         self._test_readings.t = t
-    #         self._test_readings.x = x
-    #         self._test_readings.y = y
-    #         self._test_readings.z = z
-    #
-    #         self.update_graph(self._test_readings)
-    #         self.update_measurement_text_field(self._test_readings)
 
     def update_graph(self, measurements: MeasurementsChunk) -> None:
         self._gui_app.root_layout.ids.graph.update_data(measurements)
@@ -123,3 +97,6 @@ class Gui(IGuiController, IGuiSubject):
 
     def set_previous_preset_button_handler(self, handler: typing.Callable) -> None:
         self._gui_app.root_layout.ids.preset_selection_panel.ids.left_arrow.touch_callback = handler
+
+    async def wait_for_closed(self):
+        await asyncio.wait_for(self._gui_task, None)
