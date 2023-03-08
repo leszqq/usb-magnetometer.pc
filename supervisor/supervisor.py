@@ -93,9 +93,9 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
             chunk: MeasurementsChunk = await queue.get()
             content.extend(chunk)
         try:
+            self._app_state = AppState.READING
             self._flush_measurements_queue()
             self._sensor.start_stream()
-            self._app_state = AppState.READING
             self._update_gui_buttons()
 
             i = 0
