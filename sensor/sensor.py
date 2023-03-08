@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from time import perf_counter
 import ftd2xx as ftd
 import numpy as np
-from ftd2xx import DeviceError, FTD2XX
+from ftd2xx import DeviceError, FTD2XX, ftd2xx
 from typing import List
 
 from constants import FS
@@ -44,7 +44,10 @@ class Request:
         self._device = device
 
     def send(self):
-        self._device.write(self._bytes)
+        try:
+            self._device.write(self._bytes)
+        except DeviceError:
+            raise SensorCommunicationError
 
 
 class Response:

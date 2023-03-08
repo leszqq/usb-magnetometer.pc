@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 _MAX_FILE_TIME = 120
 
+
 class AppState(Enum):
     SENSOR_DISCONNECTED = 1
     STANDBY = 2
@@ -71,7 +72,6 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
 
     def feed_measurements(self, measurements: MeasurementsChunk) -> None:
         if self._app_state == AppState.READING:
-            # TODO: store measurements in queue
             self._measurements_queue.put_nowait(measurements)
             pass
 
@@ -88,21 +88,31 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._update_gui_buttons()
 
     async def _read(self):
-        self._flush_measurements_queue()
-        self._sensor.start_stream()
-        self._app_state = AppState.READING
-        self._update_gui_buttons()
 
-        i = 0
-        while True:
-            measurements: MeasurementsChunk = await self._measurements_queue.get()
-            self._gui.update_measurement_text_field(measurements)
-            self._gui.update_graph(measurements)
-            self._measurements_buffer.extend(measurements)
-            i += 1
-            if i > 100:
-                i = 0
-                self._measurements_buffer.drop_older_than(int(FS * _MAX_FILE_TIME))
+        async def get_from_queue(queue, content):
+            chunk: MeasurementsChunk = await queue.get()
+            content.extend(chunk)
+        try:
+            self._flush_measurements_queue()
+            self._sensor.start_stream()
+            self._app_state = AppState.READING
+            self._update_gui_buttons()
+
+            i = 0
+            while True:
+                measurements: Optional[MeasurementsChunk] = MeasurementsChunk([], [], [], [])
+                await asyncio.wait_for(get_from_queue(self._measurements_queue, measurements), timeout=0.2)
+                self._gui.update_measurement_text_field(measurements)
+                self._gui.update_graph(measurements)
+                self._measurements_buffer.extend(measurements)
+                i += 1
+                if i > 100:
+                    i = 0
+                    self._measurements_buffer.drop_older_than(int(FS * _MAX_FILE_TIME))
+        except (SensorCommunicationError, asyncio.TimeoutError):
+            if self._app_state == AppState.READING:
+                self._app_state = AppState.SENSOR_DISCONNECTED
+                await self._connect_to_sensor()
 
     def _stop_reading(self):
         self._sensor.stop_stream()
@@ -121,7 +131,12 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
             if self._sensor.get_current_range() != new_range:
                 self._app_state = AppState.TRANSITION
                 self._update_gui_buttons()
-                self._reconfigure(new_range)
+                try:
+                    self._reconfigure(new_range)
+                except SensorCommunicationError:
+                    self._app_state = AppState.SENSOR_DISCONNECTED
+                    asyncio.create_task(self._connect_to_sensor())
+                    return
 
     def _update_gui_buttons(self):
 

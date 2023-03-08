@@ -156,7 +156,6 @@ class CustomGraph(Graph):
     def on_touch_down(self, touch):
         if touch.is_mouse_scrolling:
             if touch.button == 'scrolldown':
-                print('down')
                 if self.ymax > 5.0:
                     self.ymax -= 5.0
                     self.ymin += 5.0
