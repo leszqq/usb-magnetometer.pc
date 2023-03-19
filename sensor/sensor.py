@@ -82,7 +82,7 @@ class Sensor(ISensorController, IMeasurementProducer):
         self._reader_task: Optional = None
         self._stream_reading_done = True
 
-    def connect_and_init(self) -> bool:
+    def connect_and_init(self) -> None:
 
         devices = ftd.listDevices()
         if devices is None or len(devices) != 1:
@@ -141,7 +141,7 @@ class Sensor(ISensorController, IMeasurementProducer):
     def _stream_reader_task(self):
 
         def scale(data: bytes):
-            return 2 * (np.int16((data[0] << 8) | data[1]) / 2.0 ** 16) * self._sensor_range.to_float()
+            return 2 * (np.int16((data[1] << 8) | data[0]) / 2.0 ** 16) * self._sensor_range.to_float()
 
         while True:
             data: bytes = self._device.read(_CHUNK_PACKET_SIZE)
