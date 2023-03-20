@@ -59,7 +59,6 @@ class Supervisor(IGuiObserver, IMeasurementConsumer):
         self._change_range_if_needed(SensorRange.PLUS_MINUS_100_MT)
 
     def on_explore_data_button(self) -> None:
-        print("Starting plotly")
         try:
             FileHandler().explore_file()
         except InvalidFileError:

@@ -2,7 +2,9 @@ import asyncio
 import logging
 from enum import IntEnum
 from typing import Optional, Tuple
-from time import perf_counter
+from serial import Serial
+from constants import FTDI_PID, FTDI_VID
+from serial.tools import list_ports
 import ftd2xx as ftd
 import numpy as np
 from ftd2xx import DeviceError, FTD2XX, ftd2xx
@@ -84,24 +86,31 @@ class Sensor(ISensorController, IMeasurementProducer):
 
     def connect_and_init(self) -> None:
 
-        devices = ftd.listDevices()
-        if devices is None or len(devices) != 1:
+        ports = list_ports.comports()
+        com_name = None
+        for p in ports:
+            if p.pid == FTDI_PID and p.vid == FTDI_VID:
+                com_name = p.name
+
+        if not com_name:
             raise SensorCommunicationError
-        try:
-            self._device = ftd.open(0)
-            self._device.setBaudRate(921600)
-            self._device.setTimeouts(1000, 1000)
-            Request(self._device, MessageType.TEST, 0).send()
-            data = Response(self._device, MessageType.TEST).read()
-            if data != bytes([0x00]):
+        else:
+            try:
+                self._device = Serial(com_name)
+                self._device.baudrate = 921600
+                self._device.timeout = 1.0
+                self._device.write_timeout = 1.0
+                Request(self._device, MessageType.TEST, 0).send()
+                data = Response(self._device, MessageType.TEST).read()
+                if data != bytes([0x00]):
+                    raise SensorCommunicationError
+                Request(self._device, MessageType.RESET, 0).send()
+                data = Response(self._device, MessageType.RESET).read()
+                if data != bytes([0x00]):
+                    raise SensorCommunicationError
+                self._connected = True
+            except DeviceError:
                 raise SensorCommunicationError
-            Request(self._device, MessageType.RESET, 0).send()
-            data = Response(self._device, MessageType.RESET).read()
-            if data != bytes([0x00]):
-                raise SensorCommunicationError
-            self._connected = True
-        except DeviceError:
-            raise SensorCommunicationError
 
     def reconfigure(self, sensor_range: SensorRange) -> None:
         Request(self._device, MessageType.SET_RANGE, int(sensor_range)).send()
@@ -141,7 +150,7 @@ class Sensor(ISensorController, IMeasurementProducer):
     def _stream_reader_task(self):
 
         def scale(data: bytes):
-            return 2 * (np.int16((data[1] << 8) | data[0]) / 2.0 ** 16) * self._sensor_range.to_float()
+            return 2.0 * (np.int16((data[1] << 8) | data[0]) / 2.0 ** 16) * self._sensor_range.to_float()
 
         while True:
             data: bytes = self._device.read(_CHUNK_PACKET_SIZE)
