@@ -20,13 +20,13 @@ _RESPONSE_SIZE = 2
 _CHUNK_PACKET_SIZE = 480
 _CHUNK_PERIOD = (_CHUNK_PACKET_SIZE / 6) / FS
 
-_X_OFFSET_25_50 = 0.038
-_Y_OFFSET_25_50 = 0.008
-_Z_OFFSET_25_50 = -0.039
+_X_OFFSET_25_50 = 0.0  # 0.038
+_Y_OFFSET_25_50 = 0.0  # 0.008
+_Z_OFFSET_25_50 = 0.0  # -0.039
 
-_X_OFFSET_100 = -0.188
-_Y_OFFSET_100 = -0.180
-_Z_OFFSET_100 = -0.179
+_X_OFFSET_100 = 0.0  # -0.188
+_Y_OFFSET_100 = 0.0  # -0.180
+_Z_OFFSET_100 = 0.0  # -0.179
 
 
 class MessageType(IntEnum):
@@ -176,4 +176,3 @@ class Sensor(ISensorController, IMeasurementProducer):
             chunk = MeasurementsChunk(t, x, y, z)
             self._measurement_consumer.feed_measurements(chunk)
             self._t0 += _CHUNK_PERIOD
-
