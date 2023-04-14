@@ -17,7 +17,7 @@ from interfaces.i_measurement_producer import IMeasurementProducer
 from interfaces.i_sensor_controller import ISensorController, SensorRange, SensorCommunicationError
 
 _RESPONSE_SIZE = 2
-_CHUNK_PACKET_SIZE = 120 #  480
+_CHUNK_PACKET_SIZE = 30 # 120 #  480
 _CHUNK_PERIOD = (_CHUNK_PACKET_SIZE / 6) / FS
 
 _X_OFFSET_25_50 = 0.032  # 0.038
