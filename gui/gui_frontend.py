@@ -132,7 +132,7 @@ class CustomGraph(Graph):
 
     def __init__(self, **kwargs):
         super(CustomGraph, self).__init__(**kwargs)
-        self._MAX_PLOT_POINTS = 1000
+        self._MAX_PLOT_POINTS = 500
         self._time_range = 10.0
 
         self._x_filt_state: Optional = None
@@ -173,7 +173,7 @@ class CustomGraph(Graph):
 
     def _update_aafilter(self):
         _MIN_SIN_SAMPLES = 3
-        self._aafilter = signal.iirfilter(N=8, Wn=(self._MAX_PLOT_POINTS / self._time_range) / _MIN_SIN_SAMPLES,
+        self._aafilter = signal.iirfilter(N=6, Wn=(self._MAX_PLOT_POINTS / self._time_range) / _MIN_SIN_SAMPLES,
                                           btype='low', ftype='butter', output='sos', fs=FS)
 
         self._x_filt_state = np.zeros((self._aafilter.shape[0], 2))
@@ -194,7 +194,7 @@ class CustomGraph(Graph):
         decimated_chunk.y = [filtered_chunk.y[i] for i in range(0, len(filtered_chunk.y), q)]
         decimated_chunk.z = [filtered_chunk.z[i] for i in range(0, len(filtered_chunk.z), q)]
         self._data_decimated.extend(decimated_chunk)
-        self._data_decimated.drop_older_than(int(self._MAX_PLOT_POINTS * 1.5))
+        self._data_decimated.drop_older_than(int(self._MAX_PLOT_POINTS * 1.25))
 
     def update_plot(self):
         if self._data_decimated.t[-1] > self.xmax:
